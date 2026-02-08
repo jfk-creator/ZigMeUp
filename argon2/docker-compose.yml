@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root 
+      POSTGRES_DB: argon2 
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
+
+# docker compose up -d
+# docker compose exec db psql -U admin -d app_db
