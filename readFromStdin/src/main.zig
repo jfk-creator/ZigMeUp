@@ -5,6 +5,7 @@ pub fn main() !void {
     std.debug.print("you typed: {s}\n", .{try readFromStdIn(&buffer)});
 }
 
+// don't try reading from NVIM bruh, pls stop.
 pub fn readFromStdIn(buffer: []u8) ![]u8 {
     const stdin = std.fs.File.stdin();
     defer stdin.close();
