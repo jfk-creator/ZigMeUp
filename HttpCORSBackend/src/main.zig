@@ -43,7 +43,6 @@ pub fn handleConnection(connection: std.net.Server.Connection) !void {
     };
 
     if(request.head.method == .OPTIONS) {
-        std.debug.print("received Preflight request.\n", .{});
         try request.respond("", .{ 
             .status = .no_content, 
             .extra_headers = &cors_headers, 
@@ -52,35 +51,52 @@ pub fn handleConnection(connection: std.net.Server.Connection) !void {
     }
 
     if (request.head.method == .POST) {
-        var transfer_buffer: [8192]u8 = undefined;
-        var body_reader = request.server.reader.bodyReader(
-            &transfer_buffer, 
-            .none, 
-            request.head.content_length
-        );
-        var body_buffer: [8192]u8 = undefined;
-        var bytes_read: usize = 0;
-        while (true) {
-            const size = try body_reader.readSliceShort(body_buffer[bytes_read..]);
-            if (size == 0) break; 
-            
-            bytes_read += size;
-            if (request.head.content_length) |c_len| {
-                if (bytes_read >= c_len) break;
-            }
+        try handlePost(&request, cors_headers);
+    }
+}
 
-            if (bytes_read >= body_buffer.len) break; 
+const Login = struct {
+    user: []const u8, 
+    secret: []const u8
+};
+
+pub fn handlePost(request: *http.Server.Request, cors_headers: [3]std.http.Header) !void {
+
+    var transfer_buffer: [8192]u8 = undefined;
+    var body_reader = request.server.reader.bodyReader(
+        &transfer_buffer, 
+        .none, 
+        request.head.content_length
+    );
+    var body_buffer: [8192]u8 = undefined;
+    var bytes_read: usize = 0;
+    while (true) {
+        const size = try body_reader.readSliceShort(body_buffer[bytes_read..]);
+        if (size == 0) break; 
+
+        bytes_read += size;
+        if (request.head.content_length) |c_len| {
+            if (bytes_read >= c_len) break;
         }
 
-        const body = body_buffer[0..bytes_read];
-        
-        std.debug.print("Received POST body: {s}", .{body});
-        
-        try request.respond("{\"key\": \"superSecretKey\"}", .{
-            .status = .ok,
-            .extra_headers = &cors_headers, 
-            .keep_alive = false,
-        });
-        return;
+        if (bytes_read >= body_buffer.len) break; 
     }
+
+    const body = body_buffer[0..bytes_read];
+
+    std.debug.print("Received POST body: {s}\n", .{body});
+
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    const allocator = arena.allocator();
+    const parsed = try std.json.parseFromSlice(Login, allocator, body, .{});
+    const loginData = parsed.value;
+
+    std.debug.print("username: {s}, secret: {s}\n", .{loginData.user, loginData.secret});
+
+    try request.respond("{\"key\": \"superSecretKey\"}", .{
+        .status = .ok,
+        .extra_headers = &cors_headers, 
+        .keep_alive = false,
+    });
+    return;
 }
