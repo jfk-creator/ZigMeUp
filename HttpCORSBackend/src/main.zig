@@ -19,7 +19,6 @@ pub fn main() !void {
 pub fn handleConnection(connection: std.net.Server.Connection) !void {
     defer connection.stream.close();
 
-
     var rbuf: [1024]u8 = [_]u8{0} ** 1024;
     var wbuf: [1024]u8 = [_]u8{0} ** 1024;
 
