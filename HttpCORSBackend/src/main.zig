@@ -2,15 +2,23 @@ const std = @import("std");
 const net = std.net;
 const http = std.http;
 
+const cors_headers = [_]std.http.Header{
+    .{ .name = "Access-Control-Allow-Origin", .value = "*" }, 
+    .{ .name = "Access-Control-Allow-Methods", .value = "GET, POST, OPTIONS" },
+    .{ .name = "Access-Control-Allow-Headers", .value = "Content-Type, Authorization" },
+};
+
 pub fn main() !void {
     const host: [4]u8 = .{127, 0, 0, 1};
     const port = 6969;
     const addr = net.Address.initIp4(host, port);
     var server = try addr.listen(.{ .reuse_address = true});
     defer server.deinit();
+
     std.debug.print("HttpServer is running on port: {d}\n", .{port});
     while (true) {
         const connection = try server.accept();
+        
         std.debug.print("connection accepted\n", .{});
         try handleConnection(connection);
     }
@@ -26,6 +34,7 @@ pub fn handleConnection(connection: std.net.Server.Connection) !void {
     var conWriter = connection.stream.writer(&wbuf);
 
     var httpServer = http.Server.init(conReader.interface(), &conWriter.interface);
+    
 
     var request = httpServer.receiveHead() catch |err| switch (err) {
         error.HttpConnectionClosing => return,
@@ -35,22 +44,16 @@ pub fn handleConnection(connection: std.net.Server.Connection) !void {
     std.debug.print("Received {s} request for: {s}\n", 
         .{ @tagName(request.head.method), request.head.target });
 
-    const cors_headers = [_]std.http.Header{
-        .{ .name = "Access-Control-Allow-Origin", .value = "*" }, 
-        .{ .name = "Access-Control-Allow-Methods", .value = "GET, POST, OPTIONS" },
-        .{ .name = "Access-Control-Allow-Headers", .value = "Content-Type, Authorization" },
-    };
-
     if(request.head.method == .OPTIONS) {
         try request.respond("", .{ 
             .status = .no_content, 
-            .extra_headers = &cors_headers, 
+            // .extra_headers = &cors_headers, // only for localhost, nginx is doing this for us
             .keep_alive = false});
         return;
     }
 
     if (request.head.method == .POST) {
-        try handlePost(&request, cors_headers);
+        try handlePost(&request);
     }
 }
 
@@ -59,7 +62,7 @@ const Login = struct {
     secret: []const u8
 };
 
-pub fn handlePost(request: *http.Server.Request, cors_headers: [3]std.http.Header) !void {
+pub fn handlePost(request: *http.Server.Request) !void {
 
     var transfer_buffer: [8192]u8 = undefined;
     var body_reader = request.server.reader.bodyReader(
@@ -67,6 +70,7 @@ pub fn handlePost(request: *http.Server.Request, cors_headers: [3]std.http.Heade
         .none, 
         request.head.content_length
     );
+    
     var body_buffer: [8192]u8 = undefined;
     var bytes_read: usize = 0;
     while (true) {
@@ -85,16 +89,23 @@ pub fn handlePost(request: *http.Server.Request, cors_headers: [3]std.http.Heade
 
     std.debug.print("Received POST body: {s}\n", .{body});
 
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    const allocator = arena.allocator();
+    var debugAlloc = std.heap.DebugAllocator(.{}).init;
+    defer {
+        const heapCheck = debugAlloc.deinit();
+        if(heapCheck == .leak) std.debug.print("Leaking Memory in handlePost", .{});
+    }
+    const allocator = debugAlloc.allocator();
+
+
+
     const parsed = try std.json.parseFromSlice(Login, allocator, body, .{});
+    defer parsed.deinit();
     const loginData = parsed.value;
 
     std.debug.print("username: {s}, secret: {s}\n", .{loginData.user, loginData.secret});
 
-    try request.respond("{\"key\": \"superSecretKey\"}", .{
+    try request.respond("{\"key\": \"SuperSecretKey\"}", .{
         .status = .ok,
-        .extra_headers = &cors_headers, 
         .keep_alive = false,
     });
     return;
