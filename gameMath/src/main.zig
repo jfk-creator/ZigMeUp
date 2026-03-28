@@ -4,10 +4,10 @@ const testing = std.testing;
 const expect = testing.expect;
 const expectApproxEqAbs = testing.expectApproxEqAbs;
 
-const Vec2 = @import("vec2.zig").Vec2;
-const Vec3 = @import("vec3.zig").Vec3;
-const Vec4 = @import("vec4.zig").Vec4;
-const Mat3 = @import("mat3.zig").Mat3;
+const Vec2 = @import("vec.zig").Vec2;
+const Vec3 = @import("vec.zig").Vec3;
+const Vec4 = @import("vec.zig").Vec4;
+const Mat3 = @import("vec.zig").Mat3;
 
 pub fn main() !void {
     var p: Vec2 = Vec2.init(0, 0);

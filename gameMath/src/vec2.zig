@@ -14,6 +14,14 @@ pub const Vec2 = struct {
         return self.v[1];
     }
 
+    pub fn withX(self: Vec2, new_x: f32) Vec2 {
+        return .{ .v = .{ new_x, self.y() } };
+    }
+
+    pub fn withY(self: Vec2, new_y: f32) Vec2 {
+        return .{ .v = .{ self.x(), new_y } };
+    }
+
     pub fn add(self: Vec2, other: Vec2) Vec2 {
         return .{ .v = self.v + other.v };
     }
@@ -28,6 +36,10 @@ pub const Vec2 = struct {
 
     pub fn dot(self: Vec2, other: Vec2) f32 {
         return @reduce(.Add, self.v * other.v);
+    }
+
+    pub fn cross(self: Vec2, other: Vec2) f32 {
+        return self.x() * other.y() - self.y() * other.x();
     }
 
     pub fn lengthSq(self: Vec2) f32 {
@@ -70,6 +82,7 @@ pub const Vec2 = struct {
         return self.add(diff.scale(t));
     }
 
+    /// Angle in rads
     pub fn angleBetween(self: Vec2, other: Vec2) f32 {
         const d = self.dot(other);
         const l = self.length() * other.length();
