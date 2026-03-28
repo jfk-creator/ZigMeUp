@@ -190,6 +190,26 @@ pub const Vec4 = struct {
         return .{ .v = .{ xf32, yf32, zf32, wf32 } };
     }
 
+    /// Initialize with standard 0-255 bytes. 
+    pub fn fromBytes(r_byte: u8, g_byte: u8, b_byte: u8, a_byte: u8) Vec4 {
+        return init(
+            @as(f32, @floatFromInt(r_byte)) / 255.0,
+            @as(f32, @floatFromInt(g_byte)) / 255.0,
+            @as(f32, @floatFromInt(b_byte)) / 255.0,
+            @as(f32, @floatFromInt(a_byte)) / 255.0,
+        );
+    }
+
+    /// Initialize with a hex code (e.g. 0xRRGGBBAA)
+    pub fn fromHex(hex: u32) Vec4 {
+        return fromBytes(
+            @intCast((hex >> 24) & 0xFF),
+            @intCast((hex >> 16) & 0xFF),
+            @intCast((hex >> 8) & 0xFF),
+            @intCast(hex & 0xFF),
+        );
+    }
+
     pub fn x(self: Vec4) f32 {
         return self.v[0];
     }
@@ -262,79 +282,6 @@ pub const Vec4 = struct {
     pub fn format(self: Vec4, writer: anytype) !void {
         try writer.print("({d:.3}, {d:.3}, {d:.3}, {d:.3})", .{
             self.x(), self.y(), self.z(), self.w(),
-        });
-    }
-};
-
-pub const Color = struct {
-    v: @Vector(4, f32),
-
-    /// Initialize directly with floats from 0.0 to 1.0
-    pub fn init(rf32: f32, gf32: f32, bf32: f32, af32: f32) Color {
-        return .{ .v = .{ rf32, gf32, bf32, af32 } };
-    }
-
-    /// Initialize with standard 0-255 bytes. 
-    pub fn fromBytes(r_byte: u8, g_byte: u8, b_byte: u8, a_byte: u8) Color {
-        return init(
-            @as(f32, @floatFromInt(r_byte)) / 255.0,
-            @as(f32, @floatFromInt(g_byte)) / 255.0,
-            @as(f32, @floatFromInt(b_byte)) / 255.0,
-            @as(f32, @floatFromInt(a_byte)) / 255.0,
-        );
-    }
-
-    /// Initialize with a hex code (e.g. 0xRRGGBBAA)
-    pub fn fromHex(hex: u32) Color {
-        return fromBytes(
-            @intCast((hex >> 24) & 0xFF),
-            @intCast((hex >> 16) & 0xFF),
-            @intCast((hex >> 8) & 0xFF),
-            @intCast(hex & 0xFF),
-        );
-    }
-
-    pub fn r(self: Color) f32 {
-        return self.v[0];
-    }
-    
-    pub fn g(self: Color) f32 {
-        return self.v[1];
-    }
-    
-    pub fn b(self: Color) f32 {
-        return self.v[2];
-    }
-    
-    pub fn a(self: Color) f32 {
-        return self.v[3];
-    }
-
-    pub fn withR(self: Color, new_r: f32) Color {
-        return .{ .v = .{ new_r, self.g(), self.b(), self.a() } };
-    }
-
-    pub fn withG(self: Color, new_g: f32) Color {
-        return .{ .v = .{ self.r(), new_g, self.b(), self.a() } };
-    }
-
-    pub fn withB(self: Color, new_b: f32) Color {
-        return .{ .v = .{ self.r(), self.g(), new_b, self.a() } };
-    }
-
-    pub fn withA(self: Color, new_a: f32) Color {
-        return .{ .v = .{ self.r(), self.g(), self.b(), new_a } };
-    }
-
-    pub fn lerp(self: Color, other: Color, t: f32) Color {
-        const diff = other.v - self.v;
-        const splat_t: @Vector(4, f32) = @splat(t);
-        return .{ .v = self.v + (diff * splat_t) };
-    }
-
-    pub fn format(self: Color, writer: anytype) !void {
-        try writer.print("RGBA({d:.2}, {d:.2}, {d:.2}, {d:.2})", .{
-            self.r(), self.g(), self.b(), self.a(),
         });
     }
 
